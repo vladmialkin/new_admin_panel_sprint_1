@@ -20,6 +20,10 @@ class GenreAdmin(admin.ModelAdmin):
 class FilmWorkAdmin(admin.ModelAdmin):
     inlines = (GenreFilmWorkInline, PersonFilmWorkInline)
 
+    list_display = ('title', 'type', 'creation_date', 'rating',)
+
+    list_filter = ('type','creation_date')
+
 
 @admin.register(Person)
 class PersonAdmin(admin.ModelAdmin):
