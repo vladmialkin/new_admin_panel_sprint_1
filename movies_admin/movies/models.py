@@ -2,12 +2,13 @@ import uuid
 
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 
 
 # Create your models here.
 class CustomTypeField(models.TextChoices):
-    MOVIE = ("MV", "movie")
-    TV_SHOW = ("TV", "tv_show")
+    MOVIE = ("MV", _('movie'))
+    TV_SHOW = ("TV", _('tv_show'))
 
 
 class TimeStampedMixin(models.Model):
@@ -26,24 +27,25 @@ class UUIDMixin(models.Model):
 
 
 class Genre(UUIDMixin, TimeStampedMixin):
-    name = models.CharField(verbose_name='name', max_length=255)
-    description = models.TextField(verbose_name='description', blank=True)
+    name = models.CharField(verbose_name=_('name'), max_length=255)
+    description = models.TextField(verbose_name=_('description'), blank=True)
 
     class Meta:
         db_table = "content\".\"genre"
-        verbose_name = 'Жанр'
-        verbose_name_plural = 'Жанры'
+        verbose_name = _('Genre')
+        verbose_name_plural = _('Genres')
 
     def __str__(self):
-        return self.id
+        return self.name
 
 
 class FilmWork(UUIDMixin, TimeStampedMixin):
-    title = models.TextField(verbose_name='title')
-    description = models.TextField(verbose_name='description', blank=True, null=True)
-    creation_date = models.DateField(blank=True, null=True)
-    rating = models.FloatField(blank=True, null=True, validators=[MinValueValidator(0), MaxValueValidator(100)])
+    title = models.TextField(verbose_name=_('title'))
+    description = models.TextField(verbose_name=_('description'), blank=True, null=True)
+    creation_date = models.DateField(verbose_name=_('creation_date'), blank=True, null=True)
+    rating = models.FloatField(verbose_name=_('rating'), blank=True, null=True, validators=[MinValueValidator(0), MaxValueValidator(100)])
     type = models.CharField(
+        verbose_name=_('type'),
         max_length=2,
         choices=CustomTypeField.choices,
         default=CustomTypeField.MOVIE,
@@ -52,8 +54,8 @@ class FilmWork(UUIDMixin, TimeStampedMixin):
 
     class Meta:
         db_table = "content\".\"film_work"
-        verbose_name = 'Кинопроизведение'
-        verbose_name_plural = 'Кинопроизведения'
+        verbose_name = _('Film work')
+        verbose_name_plural = _('Films')
 
     def __str__(self):
         return self.title
@@ -66,20 +68,20 @@ class GenreFilmWork(UUIDMixin):
 
     class Meta:
         db_table = "content\".\"genre_film_work"
-        verbose_name = 'Жанр кинопроизведения'
-        verbose_name_plural = 'Жанры кинопроизведения'
+        verbose_name = _('Genre film work')
+        verbose_name_plural = _('Genres films')
 
     def __str__(self):
-        return f"Жанр: {self.genre} Кинопроизведение: {self.film_work}"
+        return f"{_('Genre')}: {self.genre} {_('Film work')}: {self.film_work}"
 
 
 class Person(UUIDMixin, TimeStampedMixin):
-    full_name = models.TextField(verbose_name='full_name', max_length=255)
+    full_name = models.TextField(verbose_name=_('full_name'), max_length=255)
 
     class Meta:
         db_table = "content\".\"person"
-        verbose_name = 'Персонаж'
-        verbose_name_plural = 'Персонажи'
+        verbose_name = _('Person')
+        verbose_name_plural = _('Persons')
 
     def __str__(self):
         return self.full_name
@@ -88,13 +90,13 @@ class Person(UUIDMixin, TimeStampedMixin):
 class PersonFilmWork(UUIDMixin):
     person = models.ForeignKey('Person', on_delete=models.CASCADE)
     film_work = models.ForeignKey('FilmWork', on_delete=models.CASCADE)
-    role = models.TextField(verbose_name='role')
+    role = models.TextField(verbose_name=_('role'))
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = "content\".\"person_film_work"
-        verbose_name = 'Персонаж кинопроизведения'
-        verbose_name_plural = 'Персонажи кинопроизведения'
+        verbose_name = _('Person film work')
+        verbose_name_plural = _('Persons films')
 
     def __str__(self):
-        return f"Персонаж: {self.person} Кинопроизведение: {self.film_work}"
+        return f"{_('Person')}: {self.person} {_('Film work')}: {self.film_work}"

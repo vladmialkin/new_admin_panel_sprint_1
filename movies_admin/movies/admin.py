@@ -13,7 +13,7 @@ class PersonFilmWorkInline(admin.TabularInline):
 
 @admin.register(Genre)
 class GenreAdmin(admin.ModelAdmin):
-    pass
+    earch_fields = ('name',)
 
 
 @admin.register(FilmWork)
@@ -24,7 +24,9 @@ class FilmWorkAdmin(admin.ModelAdmin):
 
     list_filter = ('type','creation_date')
 
+    search_fields = ('title', 'description', 'id')
+
 
 @admin.register(Person)
 class PersonAdmin(admin.ModelAdmin):
-    pass
+    search_fields = ('full_name',)
