@@ -36,3 +36,6 @@ person_id uuid NOT NULL REFERENCES content.person(id),
 film_work_id uuid NOT NULL REFERENCES content.film_work(id),
 role VARCHAR(20),
 created timestamp with time zone);
+
+CREATE EXTENSION "uuid-ossp";
+
