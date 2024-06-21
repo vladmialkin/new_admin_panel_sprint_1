@@ -1,8 +1,9 @@
 import sqlite3
 from dataclasses import fields, astuple
+from typing import List, Optional
+
 import psycopg
 from psycopg import ClientCursor, connection as _connection
-from psycopg.errors import ForeignKeyViolation
 from psycopg.rows import dict_row
 from schemas import (
     Person as PersonSchema,
@@ -18,25 +19,51 @@ class PostgresSaver:
         self.pg_conn = pg_conn
         self.cursor = pg_conn.cursor()
 
-    def save_all_data(self, data):
-        with self.pg_conn:
-            for table in data:
-                try:
-                    self.cursor.execute(f"TRUNCATE {table.get('table')} CASCADE")
-                    column_names = [field.name for field in fields(table.get('schema'))]
-                    column_names_str = ', '.join(column_names)
-                    col_count = ', '.join(['%s'] * len(column_names))
-                    bind_values = ','.join(
-                        self.cursor.mogrify(f"({col_count})", astuple(row)) for row in table.get('data'))
+    def save_all_data(self, data: List[dict]) -> None:
+        """Функция добавляет данные в postgres."""
+        for table in data:
+            try:
+                table_str = table.get('table')
+                schema = table.get('schema')
+                data = table.get('data')
+                # self._clear_data_table(table_str)
+                flag = self._check_table_values(table=table_str)
 
-                    query = (f'INSERT INTO {table.get('table')} ({column_names_str}) VALUES {bind_values} '
-                             f'ON CONFLICT (id) DO NOTHING')
-                    self.cursor.execute(query)
-                    self.pg_conn.commit()
-                except Exception as e:
-                    self.pg_conn.rollback()
-                    print(e)
+                if flag:
+                    print("Данные уже загружены")
+                    return
 
+                query = self._creating_query(table=table_str, schema=schema, data=data)
+                self.cursor.execute(query)
+                self.pg_conn.commit()
+
+            except Exception as e:
+                self.pg_conn.rollback()
+                print(e)
+                return
+        print('Данные добавлены в бд.')
+
+    def _check_table_values(self, table: str) -> Optional[str]:
+        """Функция проверяет на наличие данных в таблице postgres."""
+        self.cursor.execute(f"SELECT id FROM {table} LIMIT 1")
+        value = self.cursor.fetchone()
+        return value
+
+    def _creating_query(self, table: str, schema, data) -> str:
+        """Функция создает запрос для бд postgres."""
+        column_names = [field.name for field in fields(schema)]
+        column_names_str = ', '.join(column_names)
+        col_count = ', '.join(['%s'] * len(column_names))
+        bind_values = ','.join(
+            self.cursor.mogrify(f"({col_count})", astuple(row)) for row in data)
+
+        query = (f'INSERT INTO {table} ({column_names_str}) VALUES {bind_values} '
+                 f'ON CONFLICT (id) DO NOTHING')
+        return query
+
+    def _clear_data_table(self, table: str) -> None:
+        """Функция удаляет данные из таблицы."""
+        self.cursor.execute(f"TRUNCATE {table} CASCADE")
 
 
 class SQLiteLoader:
@@ -50,18 +77,19 @@ class SQLiteLoader:
                        ('person_film_work', PersonFilmWorkSchema),
                        ]
 
-    def load_movies(self) -> list:
+    def load_movies(self) -> List[dict]:
+        """Функция считывает данные из sqlite3."""
         try:
-            with self.connection:
-                data = list()
-                for table, schema in self.tables:
-                    self.cursor.execute(f"SELECT * FROM {table}")
-                    data_table = [schema(*row) for row in self.cursor.fetchall()]
-                    data.append({'table': table, 'schema': schema, 'data': data_table})
-                return data
-
+            data = list()
+            for table, schema in self.tables:
+                self.cursor.execute(f"SELECT * FROM {table}")
+                data_table = [schema(*row) for row in self.cursor.fetchall()]
+                data.append({'table': table, 'schema': schema, 'data': data_table})
+            return data
         except sqlite3.IntegrityError:
             print("Ошибка при загрузке данных из sqlite.")
+        except Exception as e:
+            print(e)
 
 
 def load_from_sqlite(connection: sqlite3.Connection, pg_conn: _connection):
