@@ -21,6 +21,8 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO, filename="py_log.log", filemode="w",
                     format="%(asctime)s %(levelname)s %(message)s")
 
+SIZE = 10
+
 
 @contextmanager
 def open_db(file_name: str):
@@ -45,38 +47,38 @@ def closing(thing):
 class PostgresSaver:
     def __init__(self, pg_conn):
         self.pg_conn = pg_conn
-        self.cursor = pg_conn.cursor()
 
     def save_all_data(self, data: List[dict]) -> None:
         """Функция добавляет данные в postgres."""
-        for table in data:
-            try:
-                table_str = table.get('table')
-                schema = table.get('schema')
-                data = table.get('data')
-                # self._clear_data_table(table_str)
-                flag = self._check_table_values(table=table_str)
+        with self.pg_conn.cursor() as cursor:
+            for table in data:
+                try:
+                    table_str = table.get('table')
+                    schema = table.get('schema')
+                    data = table.get('data')
+                    # self._clear_data_table(table_str)
+                    flag = self._check_table_values(cursor=cursor, table=table_str)
 
-                if flag:
-                    logging.info("Данные уже загружены")
-                    print("Данные уже загружены")
+                    if flag:
+                        logging.info("Данные уже загружены")
+                        print("Данные уже загружены")
+                        return
+
+                    query = self._creating_query(table=table_str, schema=schema, data=data)
+                    cursor.execute(query)
+                    self.pg_conn.commit()
+
+                except Exception as e:
+                    self.pg_conn.rollback()
+                    logging.error(e)
                     return
+            logging.info('Данные добавлены в бд.')
+            print('Данные добавлены в бд.')
 
-                query = self._creating_query(table=table_str, schema=schema, data=data)
-                self.cursor.execute(query)
-                self.pg_conn.commit()
-
-            except Exception as e:
-                self.pg_conn.rollback()
-                logging.error(e)
-                return
-        logging.info('Данные добавлены в бд.')
-        print('Данные добавлены в бд.')
-
-    def _check_table_values(self, table: str) -> Optional[str]:
+    def _check_table_values(self, cursor: psycopg.cursor, table: str) -> Optional[str]:
         """Функция проверяет на наличие данных в таблице postgres."""
-        self.cursor.execute(f"SELECT id FROM {table} LIMIT 1")
-        value = self.cursor.fetchone()
+        cursor.execute(f"SELECT id FROM {table} LIMIT 1")
+        value = cursor.fetchone()
         return value
 
     def _creating_query(self, table: str, schema, data) -> str:
@@ -114,8 +116,12 @@ class SQLiteLoader:
                 data = list()
                 for table, schema in self.tables:
                     cursor.execute(f"SELECT * FROM {table}")
-                    data_table = [schema(*row) for row in cursor.fetchall()]
-                    data.append({'table': table, 'schema': schema, 'data': data_table})
+                    while True:
+                        data_table = [schema(*row) for row in cursor.fetchmany(SIZE)]
+                        if data_table:
+                            data.append({'table': table, 'schema': schema, 'data': data_table})
+                        else:
+                            break
                 return data
             except sqlite3.IntegrityError:
                 logging.error("Ошибка при загрузке данных из sqlite.")
