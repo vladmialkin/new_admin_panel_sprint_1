@@ -7,13 +7,17 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
     ]
 
     operations = [
+        migrations.RunSQL(
+            """
+            CREATE SCHEMA IF NOT EXISTS content;
+            """
+        ),
         migrations.CreateModel(
             name='FilmWork',
             fields=[
@@ -23,7 +27,9 @@ class Migration(migrations.Migration):
                 ('title', models.TextField(verbose_name='title')),
                 ('description', models.TextField(blank=True, null=True, verbose_name='description')),
                 ('creation_date', models.DateField(blank=True, null=True)),
-                ('rating', models.FloatField(blank=True, null=True, validators=[django.core.validators.MinValueValidator(0), django.core.validators.MaxValueValidator(100)])),
+                ('rating', models.FloatField(blank=True, null=True,
+                                             validators=[django.core.validators.MinValueValidator(0),
+                                                         django.core.validators.MaxValueValidator(100)])),
                 ('type', models.CharField(choices=[('MV', 'movie'), ('TV', 'tv_show')], default='MV', max_length=2)),
             ],
             options={

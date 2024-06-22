@@ -59,6 +59,10 @@ class GenreFilmWork(UUIDMixin):
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        constraints = [
+            # Создаем уникальное ограничение по полям film_work_id и genre_id
+            models.UniqueConstraint(fields=['film_work_id', 'genre_id'], name='unique_genre_film_work'),
+        ]
         db_table = "content\".\"genre_film_work"
         verbose_name = _('Genre film work')
         verbose_name_plural = _('Genres films')
@@ -82,10 +86,14 @@ class Person(UUIDMixin, TimeStampedMixin):
 class PersonFilmWork(UUIDMixin):
     person = models.ForeignKey('Person', on_delete=models.CASCADE)
     film_work = models.ForeignKey('FilmWork', on_delete=models.CASCADE)
-    role = models.CharField(verbose_name=_('role'), choices=RolesChoice.choices, default=RolesChoice.JUNIOR)
+    role = models.CharField(verbose_name=_('role'), choices=RolesChoice.choices, default=RolesChoice.ACTOR)
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        constraints = [
+            # Создаем уникальный индекс по полям film_work_id, person_id и role
+            models.UniqueConstraint(fields=['film_work_id', 'person_id', 'role'], name='idx_person_film_work_unique'),
+        ]
         db_table = "content\".\"person_film_work"
         verbose_name = _('Person film work')
         verbose_name_plural = _('Persons films')
