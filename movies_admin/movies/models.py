@@ -1,29 +1,13 @@
-import uuid
-
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+from movies_admin.movies.mixins import UUIDMixin, TimeStampedMixin
 
-# Create your models here.
+
 class CustomTypeField(models.TextChoices):
     MOVIE = ("MV", _('movie'))
     TV_SHOW = ("TV", _('tv_show'))
-
-
-class TimeStampedMixin(models.Model):
-    created = models.DateTimeField(auto_now_add=True)
-    modified = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        abstract = True
-
-
-class UUIDMixin(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-
-    class Meta:
-        abstract = True
 
 
 class Genre(UUIDMixin, TimeStampedMixin):
@@ -43,7 +27,8 @@ class FilmWork(UUIDMixin, TimeStampedMixin):
     title = models.TextField(verbose_name=_('title'))
     description = models.TextField(verbose_name=_('description'), blank=True, null=True)
     creation_date = models.DateField(verbose_name=_('creation_date'), blank=True, null=True)
-    rating = models.FloatField(verbose_name=_('rating'), blank=True, null=True, validators=[MinValueValidator(0), MaxValueValidator(100)])
+    rating = models.FloatField(verbose_name=_('rating'), blank=True, null=True,
+                               validators=[MinValueValidator(0), MaxValueValidator(100)])
     file_path = models.FileField(blank=True, null=True, upload_to='movies/', verbose_name=_('file'))
     type = models.CharField(
         verbose_name=_('type'),
