@@ -5,6 +5,14 @@ from django.utils.translation import gettext_lazy as _
 from movies_admin.movies.mixins import UUIDMixin, TimeStampedMixin
 
 
+class RolesChoice(models.TextChoices):
+    FRESHMAN = ('FR', _('Freshman'))
+    SOPHOMORE = ('SO', _('Sophomore'))
+    JUNIOR = ('JR', _('Junior'))
+    SENIOR = ('SR', _('Senior'))
+    GRADUATE = ('GR', _('Graduate'))
+
+
 class CustomTypeField(models.TextChoices):
     MOVIE = ("MV", _('movie'))
     TV_SHOW = ("TV", _('tv_show'))
@@ -76,7 +84,7 @@ class Person(UUIDMixin, TimeStampedMixin):
 class PersonFilmWork(UUIDMixin):
     person = models.ForeignKey('Person', on_delete=models.CASCADE)
     film_work = models.ForeignKey('FilmWork', on_delete=models.CASCADE)
-    role = models.TextField(verbose_name=_('role'))
+    role = models.CharField(verbose_name=_('role'), choices=RolesChoice.choices, default=RolesChoice.JUNIOR)
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:
