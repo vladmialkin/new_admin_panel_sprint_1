@@ -1,4 +1,6 @@
 import logging
+import os
+from dotenv import load_dotenv
 import sqlite3
 from dataclasses import fields, astuple
 from typing import List, Optional
@@ -13,6 +15,8 @@ from schemas import (
     PersonFilmWork as PersonFilmWorkSchema,
     FilmWork as FilmWorkSchema,
 )
+
+load_dotenv()
 
 logging.basicConfig(level=logging.INFO, filename="py_log.log", filemode="w",
                     format="%(asctime)s %(levelname)s %(message)s")
@@ -35,6 +39,7 @@ class PostgresSaver:
 
                 if flag:
                     logging.info("Данные уже загружены")
+                    print("Данные уже загружены")
                     return
 
                 query = self._creating_query(table=table_str, schema=schema, data=data)
@@ -46,6 +51,7 @@ class PostgresSaver:
                 logging.error(e)
                 return
         logging.info('Данные добавлены в бд.')
+        print('Данные добавлены в бд.')
 
     def _check_table_values(self, table: str) -> Optional[str]:
         """Функция проверяет на наличие данных в таблице postgres."""
@@ -68,6 +74,7 @@ class PostgresSaver:
     def _clear_data_table(self, table: str) -> None:
         """Функция удаляет данные из таблицы."""
         self.cursor.execute(f"TRUNCATE {table} CASCADE")
+        logging.info(f"Данные удалены из таблицы {table}")
 
 
 class SQLiteLoader:
@@ -106,7 +113,13 @@ def load_from_sqlite(connection: sqlite3.Connection, pg_conn: _connection):
 
 
 if __name__ == '__main__':
-    dsl = {'dbname': 'movies_database', 'user': 'app', 'password': '123qwe', 'host': '127.0.0.1', 'port': 5432}
+    dsl = {
+        'dbname': os.environ.get('DB_NAME'),
+        'user': os.environ.get('DB_USER'),
+        'password': os.environ.get('PASSWORD'),
+        'host': os.environ.get('HOST'),
+        'port': os.environ.get('PORT')
+    }
     with sqlite3.connect('db.sqlite') as sqlite_conn, psycopg.connect(
             **dsl, row_factory=dict_row, cursor_factory=ClientCursor
     ) as pg_conn:
