@@ -1,3 +1,4 @@
+import logging
 import sqlite3
 from dataclasses import fields, astuple
 from typing import List, Optional
@@ -12,6 +13,9 @@ from schemas import (
     PersonFilmWork as PersonFilmWorkSchema,
     FilmWork as FilmWorkSchema,
 )
+
+logging.basicConfig(level=logging.INFO, filename="py_log.log", filemode="w",
+                    format="%(asctime)s %(levelname)s %(message)s")
 
 
 class PostgresSaver:
@@ -30,7 +34,7 @@ class PostgresSaver:
                 flag = self._check_table_values(table=table_str)
 
                 if flag:
-                    print("Данные уже загружены")
+                    logging.info("Данные уже загружены")
                     return
 
                 query = self._creating_query(table=table_str, schema=schema, data=data)
@@ -39,9 +43,9 @@ class PostgresSaver:
 
             except Exception as e:
                 self.pg_conn.rollback()
-                print(e)
+                logging.error(e)
                 return
-        print('Данные добавлены в бд.')
+        logging.info('Данные добавлены в бд.')
 
     def _check_table_values(self, table: str) -> Optional[str]:
         """Функция проверяет на наличие данных в таблице postgres."""
@@ -87,9 +91,9 @@ class SQLiteLoader:
                 data.append({'table': table, 'schema': schema, 'data': data_table})
             return data
         except sqlite3.IntegrityError:
-            print("Ошибка при загрузке данных из sqlite.")
+            logging.error("Ошибка при загрузке данных из sqlite.")
         except Exception as e:
-            print(e)
+            logging.error(e)
 
 
 def load_from_sqlite(connection: sqlite3.Connection, pg_conn: _connection):
