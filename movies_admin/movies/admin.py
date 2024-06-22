@@ -3,7 +3,6 @@ from django.contrib import admin
 from .models import Genre, FilmWork, GenreFilmWork, Person, PersonFilmWork
 
 
-# Register your models here.
 class GenreFilmWorkInline(admin.TabularInline):
     model = GenreFilmWork
 
