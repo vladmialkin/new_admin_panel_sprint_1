@@ -23,15 +23,15 @@ class Genre:
 @dataclass
 class GenreFilmWork:
     id: uuid4
-    genre_id: uuid4
     film_work_id: uuid4
+    genre_id: uuid4
     created: datetime
 
 @dataclass
 class PersonFilmWork:
     id: uuid4
-    person_id: uuid4
     film_work_id: uuid4
+    person_id: uuid4
     role: str
     created: datetime
 
