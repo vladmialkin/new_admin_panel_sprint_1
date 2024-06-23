@@ -33,8 +33,8 @@ modified timestamp with time zone);
 
 CREATE TABLE IF NOT EXISTS content.person_film_work(
 id uuid PRIMARY KEY,
-person_id uuid NOT NULL REFERENCES content.person (id) ON DELETE CASCADE,
 film_work_id uuid NOT NULL REFERENCES content.film_work (id) ON DELETE CASCADE,
+person_id uuid NOT NULL REFERENCES content.person (id) ON DELETE CASCADE,
 role TEXT NOT NULL,
 created timestamp with time zone);
 
