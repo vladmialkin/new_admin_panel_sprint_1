@@ -39,9 +39,7 @@ role TEXT NOT NULL,
 created timestamp with time zone);
 
 
-CREATE UNIQUE INDEX idx_person_film_work_unique
+CREATE UNIQUE INDEX IF NOT EXISTS idx_person_film_work_unique
 ON content.person_film_work (film_work_id, person_id, role);
 
-ALTER TABLE content.genre_film_work
-ADD CONSTRAINT unique_genre_film_work UNIQUE (film_work_id, genre_id);
-
+ALTER TABLE content.genre_film_work ADD CONSTRAINT unique_genre_film_work UNIQUE (film_work_id, genre_id);
