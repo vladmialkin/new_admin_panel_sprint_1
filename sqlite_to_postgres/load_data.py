@@ -48,6 +48,16 @@ class PostgresSaver:
     def __init__(self, pg_conn):
         self.pg_conn = pg_conn
 
+    def _delete_tables(self):
+        tables = ['genre',
+                  'person',
+                  'film_work',
+                  'genre_film_work',
+                  'person_film_work']
+        for table in tables:
+            with self.pg_conn.cursor() as cursor:
+                cursor.execute(f"drop table {table} cascade")
+        print('Таблицы удалены')
     def save_all_data(self, data: List[dict]) -> None:
         """Функция добавляет данные в postgres."""
         with self.pg_conn.cursor() as cursor:
