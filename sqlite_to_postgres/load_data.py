@@ -48,60 +48,75 @@ class PostgresSaver:
     def __init__(self, pg_conn):
         self.pg_conn = pg_conn
 
+    def _delete_tables(self):
+        tables = ['genre',
+                  'person',
+                  'film_work',
+                  'genre_film_work',
+                  'person_film_work']
+        with self.pg_conn.cursor() as cursor:
+            for table in tables:
+                cursor.execute(f"DROP TABLE IF EXISTS {table} CASCADE;")
+        print("Таблицы удалены из postgres.")
+
     def save_all_data(self, data: List[dict]) -> None:
         """Функция добавляет данные в postgres."""
         with self.pg_conn.cursor() as cursor:
+            flag = self._check_table_values(cursor=cursor, table=data[0].get('table'))
+
+            if flag:
+                logging.info("Данные уже загружены")
+                print("Данные уже загружены")
+                return
+
             for table in data:
                 try:
                     table_str = table.get('table')
                     schema = table.get('schema')
                     data = table.get('data')
-                    # self._clear_data_table(table_str)
-                    flag = self._check_table_values(cursor=cursor, table=table_str)
+                    # self._clear_data_table(cursor=cursor, table=table_str)
 
-                    if flag:
-                        logging.info("Данные уже загружены")
-                        print("Данные уже загружены")
-                        return
-
-                    query = self._creating_query(table=table_str, schema=schema, data=data)
+                    query = self._creating_query(cursor=cursor, table=table_str, schema=schema, data=data)
                     cursor.execute(query)
                     self.pg_conn.commit()
 
                 except Exception as e:
                     self.pg_conn.rollback()
                     logging.error(e)
+                    self._delete_tables()
                     return
             logging.info('Данные добавлены в бд.')
             print('Данные добавлены в бд.')
 
-    def _check_table_values(self, cursor: psycopg.cursor, table: str) -> Optional[str]:
+    @staticmethod
+    def _check_table_values(cursor: psycopg.cursor, table: str) -> Optional[str]:
         """Функция проверяет на наличие данных в таблице postgres."""
         cursor.execute(f"SELECT id FROM {table} LIMIT 1")
         value = cursor.fetchone()
         return value
 
-    def _creating_query(self, table: str, schema, data) -> str:
+    @staticmethod
+    def _creating_query(cursor: psycopg.cursor, table: str, schema, data) -> str:
         """Функция создает запрос для бд postgres."""
         column_names = [field.name for field in fields(schema)]
         column_names_str = ', '.join(column_names)
         col_count = ', '.join(['%s'] * len(column_names))
         bind_values = ','.join(
-            self.cursor.mogrify(f"({col_count})", astuple(row)) for row in data)
+            cursor.mogrify(f"({col_count})", astuple(row)) for row in data)
 
         query = (f'INSERT INTO {table} ({column_names_str}) VALUES {bind_values} '
                  f'ON CONFLICT (id) DO NOTHING')
         return query
 
-    def _clear_data_table(self, table: str) -> None:
+    def _clear_data_table(self, cursor: psycopg.cursor, table: str) -> None:
         """Функция удаляет данные из таблицы."""
-        self.cursor.execute(f"TRUNCATE {table} CASCADE")
+        cursor.execute(f"TRUNCATE {table} CASCADE")
         logging.info(f"Данные удалены из таблицы {table}")
 
 
 class SQLiteLoader:
-    def __init__(self, cursor):
-        self.cursor = cursor
+    def __init__(self, sqlite_connect):
+        self.conn = sqlite_connect
         self.tables = [('genre', GenreSchema),
                        ('person', PersonSchema),
                        ('film_work', FilmWorkSchema),
@@ -111,16 +126,18 @@ class SQLiteLoader:
 
     def load_movies(self) -> List[dict]:
         """Функция считывает данные из sqlite3."""
-        with closing(self.cursor) as cursor:
+        with closing(self.conn) as cursor:
             try:
-                data = list()
+                data = []
                 for table, schema in self.tables:
                     cursor.execute(f"SELECT * FROM {table}")
+                    data_values = []
                     while True:
                         data_table = [schema(*row) for row in cursor.fetchmany(SIZE)]
                         if data_table:
-                            data.append({'table': table, 'schema': schema, 'data': data_table})
+                            data_values.extend(data_table)
                         else:
+                            data.append({'table': table, 'schema': schema, 'data': data_values})
                             break
                 return data
             except sqlite3.IntegrityError:
@@ -136,6 +153,7 @@ def load_from_sqlite(connection: sqlite3.Cursor, pg_conn: _connection):
 
     data = sqlite_loader.load_movies()
     postgres_saver.save_all_data(data)
+    # postgres_saver._delete_tables()
 
 
 if __name__ == '__main__':
@@ -146,7 +164,7 @@ if __name__ == '__main__':
         'host': os.environ.get('HOST'),
         'port': os.environ.get('PORT')
     }
-    with open_db(file_name='db.sqlite') as sqlite_cursor, psycopg.connect(
+    with open_db(file_name='../schema_design/db.sqlite') as sqlite_connect, psycopg.connect(
             **dsl, row_factory=dict_row, cursor_factory=ClientCursor
     ) as pg_conn:
-        load_from_sqlite(sqlite_cursor, pg_conn)
+        load_from_sqlite(sqlite_connect, pg_conn)
