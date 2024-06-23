@@ -48,17 +48,6 @@ class PostgresSaver:
     def __init__(self, pg_conn):
         self.pg_conn = pg_conn
 
-    def _delete_tables(self):
-        tables = ['genre',
-                  'person',
-                  'film_work',
-                  'genre_film_work',
-                  'person_film_work']
-        with self.pg_conn.cursor() as cursor:
-            for table in tables:
-                cursor.execute(f"DROP TABLE IF EXISTS {table} CASCADE;")
-        print("Таблицы удалены из postgres.")
-
     def save_all_data(self, data: List[dict]) -> None:
         """Функция добавляет данные в postgres."""
         with self.pg_conn.cursor() as cursor:
@@ -83,7 +72,6 @@ class PostgresSaver:
                 except Exception as e:
                     self.pg_conn.rollback()
                     logging.error(e)
-                    self._delete_tables()
                     return
             logging.info('Данные добавлены в бд.')
             print('Данные добавлены в бд.')
@@ -164,7 +152,7 @@ if __name__ == '__main__':
         'host': os.environ.get('HOST'),
         'port': os.environ.get('PORT')
     }
-    with open_db(file_name='../schema_design/db.sqlite') as sqlite_connect, psycopg.connect(
+    with open_db(file_name='db.sqlite') as sqlite_connect, psycopg.connect(
             **dsl, row_factory=dict_row, cursor_factory=ClientCursor
     ) as pg_conn:
         load_from_sqlite(sqlite_connect, pg_conn)
