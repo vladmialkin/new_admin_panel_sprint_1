@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS content.film_work (
 
 CREATE TABLE IF NOT EXISTS content.genre(
 id uuid PRIMARY KEY,
-name TEXT NOT NULL unique,
+name TEXT NOT NULL UNIQUE,
 description TEXT,
 created timestamp with time zone,
 modified timestamp with time zone);
@@ -42,4 +42,5 @@ created timestamp with time zone);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_person_film_work_unique
 ON content.person_film_work (film_work_id, person_id, role);
 
-ALTER TABLE content.genre_film_work ADD CONSTRAINT unique_genre_film_work UNIQUE (film_work_id, genre_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_genre_film_work_unique
+ON content.genre_film_work (film_work_id, genre_id);
